@@ -1,7 +1,10 @@
 [package]
-name = "niri-screenshot-tool"
+name = "niri-screenshot-tools"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 niri-ipc = "25.11.0"
+pathexpand = "0.1.1"
+serde = "1.0.228"
+toml = "1.1.0"
