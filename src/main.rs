@@ -1,6 +1,7 @@
 use std::process::Command;
 
 use niri_ipc::{Event, Request, Response, socket::Socket};
+use notify_rust::{CloseReason, Notification};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -10,21 +11,20 @@ struct Config {
     uploader: Uploader,
 }
 #[derive(Deserialize)]
-#[allow(dead_code)]
 struct Annotator {
     command: String,
     enabled: bool,
     auto: bool,
 }
 #[derive(Deserialize)]
-#[allow(dead_code)]
 struct Uploader {
     url: String,
     enabled: bool,
+    auto: bool,
 }
-fn annotate(path: String, config: &Annotator) {
+fn annotate(path: &String, config: &Annotator) {
     let mut annotator = Command::new("sh");
-    let command = config.command.replace("%path%", &path);
+    let command = config.command.replace("%path%", path);
     match annotator.arg("-c").arg(command).output() {
         Ok(out) => {
             println!("{out:?}")
@@ -49,7 +49,25 @@ fn main() -> std::io::Result<()> {
         let mut read_event = socket.read_events();
         while let Ok(event) = read_event() {
             if let Event::ScreenshotCaptured { path: Some(path) } = event {
-                annotate(path, &config.annotator);
+                if config.annotator.enabled {
+                    if config.annotator.auto {
+                        annotate(&path, &config.annotator)
+                    } else {
+                        // TODO: this blocks which sucks, but me and lily couldn't figure out how threads work
+                        // is also probably dependent on mako specific weirdness??? but whatever
+                        Notification::new()
+                            .summary("Click to annotate")
+                            .show()
+                            .map(|handler| {
+                                handler.on_close(|reason| {
+                                    if let CloseReason::Dismissed = reason {
+                                        annotate(&path, &config.annotator);
+                                    }
+                                })
+                            })
+                            .expect("failed to spawn notification");
+                    }
+                };
             }
         }
     }
