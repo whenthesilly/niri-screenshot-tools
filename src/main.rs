@@ -1,8 +1,7 @@
-use std::process::Command;
-
 use niri_ipc::{Event, Request, Response, socket::Socket};
 use notify_rust::{CloseReason, Notification};
 use serde::Deserialize;
+use std::{path::Path, process::Command};
 
 #[derive(Deserialize)]
 #[allow(dead_code)]
@@ -43,6 +42,7 @@ fn main() -> std::io::Result<()> {
     .expect("Please write a config file (temporary)");
     let config = toml::from_str::<Config>(&config).expect("unable to parse config");
     let mut socket = Socket::connect()?;
+    let client = reqwest::blocking::Client::new();
 
     let reply = socket.send(Request::EventStream)?;
     if matches!(reply, Ok(Response::Handled)) {
@@ -66,6 +66,16 @@ fn main() -> std::io::Result<()> {
                                 })
                             })
                             .expect("failed to spawn notification");
+                    };
+                    if config.uploader.enabled {
+                        if config.uploader.auto {
+                            let image =
+                                std::fs::read(&path).expect("Unable to read screenshot path");
+                            let filename = Path::new(&path).file_name().unwrap().to_str().unwrap(); //this is disgusting but its 1am
+                            let url = format!("{}/{}", &config.uploader.url, filename);
+                            let res = client.put(url).body(image).send();
+                            println!("{res:?}");
+                        }
                     }
                 };
             }
