@@ -27,7 +27,7 @@ auto = true
 ### Uploader
 (Note that currently, only instances of copyparty are supported. It just uses a PUT request though, so it may well work with other things)
 * `url`
-  * The url of the location to upload the screenshot to, with `%name` being replaced by the base name of the file
+  * The url of the location to upload the screenshot to, with `%name%` being replaced by the base name of the file
 * `enabled`
   * Same as Annotator
 * `auto`
