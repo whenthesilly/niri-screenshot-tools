@@ -33,12 +33,17 @@ fn annotate(path: &String, config: &Annotator) {
     }
 }
 
+fn upload(client: &reqwest::blocking::Client, url: &str, image: &Vec<u8>) {
+    let res = client.put(url).body(image.clone()).send();
+    println!("{res:?}");
+} // TODO: give this post functionality also to work with other destinations
+
 fn main() {
     let config = std::fs::read_to_string(
         pathexpand::expand("${XDG_CONFIG_HOME:~/.config}/niri-screenshot-tools/config.toml")
             .unwrap(),
     )
-    .expect("Please write a config file (temporary)");
+    .expect("Please write a config file (temporary)"); // TODO: write a default config and save it to a file instead
     let config = toml::from_str::<Config>(&config).expect("unable to parse config");
     let mut socket = Socket::connect().expect("Failed to connect to niri socket");
     let client = reqwest::blocking::Client::new();
@@ -68,14 +73,25 @@ fn main() {
                     }
                 };
                 if config.uploader.enabled {
+                    let image = std::fs::read(&path).expect("Unable to read screenshot path");
+                    let filename = Path::new(&path).file_name().unwrap().to_str().unwrap(); //this is disgusting but its 1am
+                    let url = format!("{}/{}", &config.uploader.url, filename); // TODO: give this a %filename% thing similarly to annotating, to make functionality more apparent
+
                     if config.uploader.auto {
-                        let image = std::fs::read(&path).expect("Unable to read screenshot path");
-                        let filename = Path::new(&path).file_name().unwrap().to_str().unwrap(); //this is disgusting but its 1am
-                        let url = format!("{}/{}", &config.uploader.url, filename);
-                        let res = client.put(url).body(image).send();
-                        println!("{res:?}");
+                        upload(&client, &url, &image)
                     } else {
-                        todo!()
+                        // TODO: this also blocks
+                        Notification::new()
+                            .summary("Click to upload")
+                            .show()
+                            .map(|handler| {
+                                handler.on_close(|reason| {
+                                    if let CloseReason::Dismissed = reason {
+                                        upload(&client, &url, &image);
+                                    }
+                                })
+                            })
+                            .expect("failed to spawn notification");
                     }
                 }
             }
