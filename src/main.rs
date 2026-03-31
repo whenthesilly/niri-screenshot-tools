@@ -4,7 +4,6 @@ use serde::Deserialize;
 use std::{path::Path, process::Command};
 
 #[derive(Deserialize)]
-#[allow(dead_code)]
 struct Config {
     annotator: Annotator,
     uploader: Uploader,
@@ -34,17 +33,17 @@ fn annotate(path: &String, config: &Annotator) {
     }
 }
 
-fn main() -> std::io::Result<()> {
+fn main() {
     let config = std::fs::read_to_string(
         pathexpand::expand("${XDG_CONFIG_HOME:~/.config}/niri-screenshot-tools/config.toml")
             .unwrap(),
     )
     .expect("Please write a config file (temporary)");
     let config = toml::from_str::<Config>(&config).expect("unable to parse config");
-    let mut socket = Socket::connect()?;
+    let mut socket = Socket::connect().expect("Failed to connect to niri socket");
     let client = reqwest::blocking::Client::new();
 
-    let reply = socket.send(Request::EventStream)?;
+    let reply = socket.send(Request::EventStream).unwrap();
     if matches!(reply, Ok(Response::Handled)) {
         let mut read_event = socket.read_events();
         while let Ok(event) = read_event() {
@@ -66,21 +65,20 @@ fn main() -> std::io::Result<()> {
                                 })
                             })
                             .expect("failed to spawn notification");
-                    };
-                    if config.uploader.enabled {
-                        if config.uploader.auto {
-                            let image =
-                                std::fs::read(&path).expect("Unable to read screenshot path");
-                            let filename = Path::new(&path).file_name().unwrap().to_str().unwrap(); //this is disgusting but its 1am
-                            let url = format!("{}/{}", &config.uploader.url, filename);
-                            let res = client.put(url).body(image).send();
-                            println!("{res:?}");
-                        }
                     }
                 };
+                if config.uploader.enabled {
+                    if config.uploader.auto {
+                        let image = std::fs::read(&path).expect("Unable to read screenshot path");
+                        let filename = Path::new(&path).file_name().unwrap().to_str().unwrap(); //this is disgusting but its 1am
+                        let url = format!("{}/{}", &config.uploader.url, filename);
+                        let res = client.put(url).body(image).send();
+                        println!("{res:?}");
+                    } else {
+                        todo!()
+                    }
+                }
             }
         }
     }
-
-    Ok(())
 }
