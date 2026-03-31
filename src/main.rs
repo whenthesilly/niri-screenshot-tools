@@ -20,7 +20,7 @@ struct Uploader {
     enabled: bool,
     auto: bool,
 }
-fn annotate(path: &String, config: &Annotator) {
+fn annotate(path: &str, config: &Annotator) {
     let mut annotator = Command::new("sh");
     let command = config.command.replace("%path%", path);
     match annotator.arg("-c").arg(command).output() {
@@ -33,8 +33,8 @@ fn annotate(path: &String, config: &Annotator) {
     }
 }
 
-fn upload(client: &reqwest::blocking::Client, url: &str, image: &Vec<u8>) {
-    let res = client.put(url).body(image.clone()).send();
+fn upload(client: &reqwest::blocking::Client, url: &str, image: &[u8]) {
+    let res = client.put(url).body(image.to_owned()).send();
     println!("{res:?}");
 } // TODO: give this post functionality also to work with other destinations
 
@@ -64,7 +64,7 @@ fn main() {
                             .show()
                             .map(|handler| {
                                 handler.on_close(|reason| {
-                                    if let CloseReason::Dismissed = reason {
+                                    if matches!(reason, CloseReason::Dismissed) {
                                         annotate(&path, &config.annotator);
                                     }
                                 })
@@ -86,7 +86,7 @@ fn main() {
                             .show()
                             .map(|handler| {
                                 handler.on_close(|reason| {
-                                    if let CloseReason::Dismissed = reason {
+                                    if matches!(reason, CloseReason::Dismissed) {
                                         upload(&client, &url, &image);
                                     }
                                 })
