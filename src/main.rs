@@ -75,8 +75,7 @@ fn main() {
                 if config.uploader.enabled {
                     let image = std::fs::read(&path).expect("Unable to read screenshot path");
                     let filename = Path::new(&path).file_name().unwrap().to_str().unwrap(); //this is disgusting but its 1am
-                    let url = format!("{}/{}", &config.uploader.url, filename); // TODO: give this a %filename% thing similarly to annotating, to make functionality more apparent
-
+                    let url = config.uploader.url.replace("%name%", filename);
                     if config.uploader.auto {
                         upload(&client, &url, &image)
                     } else {
