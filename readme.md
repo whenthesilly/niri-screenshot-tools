@@ -32,3 +32,6 @@ auto = true
   * Same as Annotator
 * `auto`
   * Same as Annotator
+
+
+<img src="https://github.com/niri-wm/artwork/raw/refs/heads/main/official-branding/workswithniri.svg" width="150" height="auto" alt="works with niri">
