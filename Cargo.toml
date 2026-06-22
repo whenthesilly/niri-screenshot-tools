@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-niri-ipc = "25.11.0"
+niri-ipc = "=26.4.0"
 notify-rust = "4.12.0"
 pathexpand = "0.1.1"
 reqwest = { version = "0.13.2", features = ["blocking"] }
